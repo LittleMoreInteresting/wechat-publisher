@@ -78,7 +78,7 @@ func (c *WechatClient) GetAccessToken() (string, error) {
 	return c.accessToken, nil
 }
 
-// UploadImage 上传正文图片，返回URL
+// UploadImage 上传正文图片，返回URL（用于文章正文中的图片）
 func (c *WechatClient) UploadImage(filePath string) (string, error) {
 	token, err := c.GetAccessToken()
 	if err != nil {
@@ -130,6 +130,62 @@ func (c *WechatClient) UploadImage(filePath string) (string, error) {
 	}
 
 	return result.URL, nil
+}
+
+// UploadThumb 上传封面图素材，返回 thumb_media_id（用于草稿封面）
+func (c *WechatClient) UploadThumb(filePath string) (string, string, error) {
+	token, err := c.GetAccessToken()
+	if err != nil {
+		return "", "", err
+	}
+
+	// 使用 material/add_material 接口上传永久素材（type=thumb）
+	url := fmt.Sprintf("https://api.weixin.qq.com/cgi-bin/material/add_material?access_token=%s&type=thumb", token)
+
+	// 构建multipart
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", "", err
+	}
+	defer file.Close()
+
+	part, err := writer.CreateFormFile("media", filepath.Base(filePath))
+	if err != nil {
+		return "", "", err
+	}
+	io.Copy(part, file)
+	writer.Close()
+
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return "", "", err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		MediaID string `json:"media_id"`
+		URL     string `json:"url"` // 部分素材类型会返回URL
+		ErrCode int    `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", "", err
+	}
+
+	if result.ErrCode != 0 {
+		return "", "", fmt.Errorf("upload thumb failed: %s", result.ErrMsg)
+	}
+
+	return result.MediaID, result.URL, nil
 }
 
 // CreateDraft 创建草稿

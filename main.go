@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -114,6 +117,10 @@ func (s *Server) handleCreateDraft(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"title and content required"}`, http.StatusBadRequest)
 		return
 	}
+	if req.ThumbMediaID == "" {
+		http.Error(w, `{"error":"thumb_media_id required, please upload cover image first via POST /api/materials/thumb"}`, http.StatusBadRequest)
+		return
+	}
 
 	// 生成任务ID
 	taskID := uuid.New().String()[:8]
@@ -180,11 +187,150 @@ func (s *Server) handleGetDraft(w http.ResponseWriter, r *http.Request) {
 
 // 上传缩略图（获取thumb_media_id）
 func (s *Server) handleUploadThumb(w http.ResponseWriter, r *http.Request) {
-	// 简化版：接收文件上传，返回media_id
-	// 实际实现需要解析multipart/form-data，调用微信add_material接口
-	http.Error(w, "not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var mediaID, imageURL string
+	var err error
+
+	// 判断 Content-Type
+	contentType := r.Header.Get("Content-Type")
+
+	if strings.Contains(contentType, "multipart/form-data") {
+		// 方式1: 文件上传（人工表单）
+		mediaID, imageURL, err = s.handleFileUpload(w, r)
+	} else {
+		// 方式2: JSON Base64（Kimi程序化调用）
+		mediaID, imageURL, err = s.handleBase64Upload(w, r)
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)
+		return
+	}
+
+	// 返回成功
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"thumb_media_id": mediaID,
+		"url":            imageURL,
+		"created_at":     time.Now().Format(time.RFC3339),
+	})
 }
 
+// handleFileUpload 处理 multipart 文件上传
+func (s *Server) handleFileUpload(w http.ResponseWriter, r *http.Request) (string, string, error) {
+	// 解析表单，最大内存32MB
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		return "", "", fmt.Errorf("parse form failed: %v", err)
+	}
+
+	file, handler, err := r.FormFile("image")
+	if err != nil {
+		return "", "", fmt.Errorf("get file failed: %v", err)
+	}
+	defer file.Close()
+
+	// 验证文件类型
+	ext := strings.ToLower(filepath.Ext(handler.Filename))
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		return "", "", fmt.Errorf("only jpg/png allowed, got: %s", ext)
+	}
+
+	// 保存临时文件
+	tmpDir := "/tmp/wechat_thumbs"
+	os.MkdirAll(tmpDir, 0755)
+
+	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("%d%s", time.Now().UnixNano(), ext))
+	dst, err := os.Create(tmpFile)
+	if err != nil {
+		return "", "", fmt.Errorf("create temp file failed: %v", err)
+	}
+	defer os.Remove(tmpFile) // 清理临时文件
+	defer dst.Close()
+
+	// 写入文件并检查大小
+	written, err := io.Copy(dst, file)
+	if err != nil {
+		return "", "", fmt.Errorf("save file failed: %v", err)
+	}
+	if written > 2*1024*1024 {
+		return "", "", fmt.Errorf("file size %d bytes exceeds 2MB limit", written)
+	}
+	dst.Close() // 提前关闭确保写入完成
+
+	// 上传到微信获取 thumb_media_id
+	return s.wechat.UploadThumb(tmpFile)
+}
+
+// handleBase64Upload 处理 Base64 图片（Kimi 用）
+func (s *Server) handleBase64Upload(w http.ResponseWriter, r *http.Request) (string, string, error) {
+	var req struct {
+		Image string `json:"image"` // data:image/jpeg;base64,/9j/4AAQ...
+		Name  string `json:"name"`  // 可选文件名
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return "", "", fmt.Errorf("invalid json: %v", err)
+	}
+
+	if req.Image == "" {
+		return "", "", fmt.Errorf("image base64 required")
+	}
+
+	// 解析 base64
+	var ext string
+	var base64Data string
+
+	if strings.Contains(req.Image, ",") {
+		// data:image/jpeg;base64,/9j/4AAQ... 格式
+		parts := strings.SplitN(req.Image, ",", 2)
+		meta := parts[0]
+		base64Data = parts[1]
+
+		if strings.Contains(meta, "jpeg") || strings.Contains(meta, "jpg") {
+			ext = ".jpg"
+		} else if strings.Contains(meta, "png") {
+			ext = ".png"
+		} else {
+			ext = ".jpg" // 默认
+		}
+	} else {
+		// 纯 base64 字符串
+		base64Data = req.Image
+		ext = ".jpg"
+	}
+
+	// 解码
+	data, err := base64.StdEncoding.DecodeString(base64Data)
+	if err != nil {
+		return "", "", fmt.Errorf("base64 decode failed: %v", err)
+	}
+
+	if len(data) > 2*1024*1024 {
+		return "", "", fmt.Errorf("image size %d bytes exceeds 2MB limit", len(data))
+	}
+
+	// 保存临时文件
+	tmpDir := "/tmp/wechat_thumbs"
+	os.MkdirAll(tmpDir, 0755)
+
+	fileName := req.Name
+	if fileName == "" {
+		fileName = fmt.Sprintf("cover_%d%s", time.Now().UnixNano(), ext)
+	}
+	tmpFile := filepath.Join(tmpDir, fileName)
+
+	if err := os.WriteFile(tmpFile, data, 0644); err != nil {
+		return "", "", fmt.Errorf("save temp file failed: %v", err)
+	}
+	defer os.Remove(tmpFile)
+
+	// 上传到微信获取 thumb_media_id
+	return s.wechat.UploadThumb(tmpFile)
+}
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"ok"}`))
 }
