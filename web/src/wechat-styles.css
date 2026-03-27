@@ -1,0 +1,534 @@
+/* 微信公众号文章样式 - 自适应高度版 */
+
+/* ===== 手机模拟器 - 自适应高度 ===== */
+.phone-mockup {
+  width: 375px;
+  max-height: 100%;
+  margin: 0 auto;
+  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-radius: 45px;
+  padding: 15px;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 30px rgba(255, 255, 255, 0.05);
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-mockup::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 30px;
+  background: #000;
+  border-radius: 0 0 22px 22px;
+  z-index: 10;
+}
+
+.phone-mockup::after {
+  content: '';
+  position: absolute;
+  top: 110px;
+  right: -2px;
+  width: 3px;
+  height: 70px;
+  background: linear-gradient(to right, #2a2a4a, #1a1a2e);
+  border-radius: 2px;
+}
+
+.phone-screen {
+  background: #fff;
+  border-radius: 38px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.15);
+  max-height: calc(100vh - 150px);
+}
+
+/* ===== 状态栏 ===== */
+.status-bar {
+  height: 50px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #fff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+  position: relative;
+  z-index: 5;
+  padding-top: 14px;
+}
+
+.status-bar .time {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-bar .icons {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 14px;
+}
+
+/* ===== 微信导航栏 ===== */
+.wechat-nav {
+  height: 50px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fff 0%, #fafafa 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  position: relative;
+}
+
+.wechat-nav .back {
+  width: 70px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #000;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.wechat-nav .title {
+  flex: 1;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: #000;
+  letter-spacing: 0.3px;
+}
+
+.wechat-nav .menu {
+  width: 70px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* ===== 文章区域 - 内部滚动 ===== */
+.article-scroll {
+  flex: 1;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #fefefe 0%, #fafbfc 100px);
+  -webkit-overflow-scrolling: touch;
+}
+
+.article-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== 公众号文章内容 ===== */
+.wechat-article {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #333;
+  word-wrap: break-word;
+}
+
+/* ===== 文章内容区域 ===== */
+.article-content {
+  padding: 16px;
+  background: #fff;
+}
+
+/* ===== 段落 ===== */
+.wx-p {
+  margin: 0 0 16px 0;
+  line-height: 1.75;
+  text-align: justify;
+  font-size: 16px;
+  color: #333;
+}
+
+/* ===== 标题 ===== */
+.wx-h1 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 24px 0 14px 0;
+  color: #fff;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  letter-spacing: 0.5px;
+}
+
+.wx-h2 {
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.4;
+  margin: 20px 0 12px 0;
+  color: #333;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  border-radius: 8px;
+  border-left: 3px solid #07c160;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.wx-h3 {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+  margin: 16px 0 10px 0;
+  color: #333;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, #fff9f0 0%, #fff3e0 100%);
+  border-radius: 6px;
+  border-left: 2px solid #ff9500;
+}
+
+/* ===== 引用块 ===== */
+.wx-blockquote {
+  margin: 16px 0;
+  padding: 14px 16px 14px 36px;
+  background: linear-gradient(135deg, #f0f9f4 0%, #e8f5ee 100%);
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #2c5f3f;
+  box-shadow: 0 2px 6px rgba(7, 193, 96, 0.08), inset 0 0 0 1px rgba(7, 193, 96, 0.1);
+  position: relative;
+}
+
+.wx-blockquote::before {
+  content: '"';
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 36px;
+  color: rgba(7, 193, 96, 0.15);
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+
+.wx-blockquote p {
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== 行内代码 ===== */
+.wx-code-inline {
+  font-family: 'SF Mono', 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  padding: 2px 6px;
+  background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);
+  border-radius: 4px;
+  color: #e83e8c;
+  font-weight: 500;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* ===== 代码块 - macOS 窗口风格 ===== */
+.wx-pre {
+  margin: 16px 0;
+  background: #1e1e2e;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.wx-pre::before {
+  content: '';
+  display: block;
+  height: 32px;
+  background: linear-gradient(180deg, #2d2d3a 0%, #252532 100%);
+  border-bottom: 1px solid #1a1a25;
+  position: relative;
+  background-image: 
+    radial-gradient(circle at 18px 16px, #ff5f56 5px, transparent 5px),
+    radial-gradient(circle at 36px 16px, #ffbd2e 5px, transparent 5px),
+    radial-gradient(circle at 54px 16px, #27c93f 5px, transparent 5px);
+}
+
+.wx-pre .wx-code {
+  font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #a6accd;
+  background: transparent;
+  padding: 12px 14px;
+  display: block;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-x: auto;
+  counter-reset: line;
+}
+
+/* 代码行样式 - 带行号 */
+.wx-pre .wx-code > span {
+  display: block;
+  padding-left: 28px;
+  position: relative;
+}
+
+.wx-pre .wx-code > span::before {
+  counter-increment: line;
+  content: counter(line);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 22px;
+  text-align: right;
+  color: #5a5a6e;
+  font-size: 11px;
+  user-select: none;
+}
+
+/* 日志输出高亮 */
+.wx-pre .wx-code > span.log-success {
+  color: #7ee787;
+}
+
+.wx-pre .wx-code > span.log-receive {
+  color: #79c0ff;
+}
+
+.wx-pre .wx-code > span.log-error {
+  color: #ffa198;
+}
+
+.wx-pre .wx-code > span.log-warn {
+  color: #ffa657;
+}
+
+.wx-pre .wx-code > span.log-send {
+  color: #d2a8ff;
+}
+
+/* ===== 列表 ===== */
+.wx-ul,
+.wx-ol {
+  margin: 14px 0;
+  padding-left: 18px;
+  list-style-type: none;
+}
+
+.wx-ul li {
+  position: relative;
+}
+
+.wx-ul li::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  background: linear-gradient(135deg, #07c160 0%, #00d4aa 100%);
+  border-radius: 50%;
+}
+
+.wx-ol {
+  counter-reset: item;
+}
+
+.wx-ol li {
+  counter-increment: item;
+  position: relative;
+}
+
+.wx-ol li::before {
+  content: counter(item);
+  position: absolute;
+  left: -22px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wx-li {
+  margin: 10px 0;
+  line-height: 1.7;
+  font-size: 16px;
+  color: #333;
+}
+
+/* ===== 表格 ===== */
+.wx-table-wrapper {
+  margin: 16px 0;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  background: #fff;
+}
+
+.wx-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.wx-table th,
+.wx-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: left;
+}
+
+.wx-table th {
+  background: linear-gradient(180deg, #667eea 0%, #5a6fd6 100%);
+  color: #fff;
+  font-weight: 600;
+  border-bottom: none;
+}
+
+.wx-table th:first-child {
+  border-radius: 10px 0 0 0;
+}
+
+.wx-table th:last-child {
+  border-radius: 0 10px 0 0;
+}
+
+.wx-table tr:last-child td:first-child {
+  border-radius: 0 0 0 10px;
+}
+
+.wx-table tr:last-child td:last-child {
+  border-radius: 0 0 10px 0;
+}
+
+.wx-table tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+.wx-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ===== 链接 ===== */
+.wx-a {
+  color: #576b95;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 1px 3px;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.wx-a:hover {
+  background: rgba(87, 107, 149, 0.1);
+}
+
+/* ===== 图片 ===== */
+.wx-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 16px auto;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* ===== 分割线 ===== */
+.wx-hr {
+  margin: 28px 0;
+  border: none;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #e0e0e0 15%, 
+    #667eea 30%, 
+    #764ba2 50%, 
+    #667eea 70%, 
+    #e0e0e0 85%, 
+    transparent 100%
+  );
+  position: relative;
+}
+
+.wx-hr::before {
+  content: '◆';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  color: #667eea;
+  padding: 0 10px;
+  font-size: 10px;
+}
+
+/* ===== 强调 ===== */
+strong,
+b {
+  font-weight: 700;
+  color: #000;
+  background: linear-gradient(180deg, transparent 60%, rgba(102, 126, 234, 0.2) 60%);
+  padding: 0 2px;
+}
+
+em,
+i {
+  font-style: italic;
+  color: #555;
+}
+
+/* ===== 底部操作 ===== */
+.article-actions {
+  padding: 16px;
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+}
+
+.read-more-link {
+  color: #576b95;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #fa5151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ===== 安全区域 ===== */
+.safe-area {
+  height: 20px;
+  background: #fff;
+}
+
+/* ===== 预览区域背景 ===== */
+.wechat-preview {
+  min-height: 100%;
+}
