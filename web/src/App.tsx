@@ -12,8 +12,6 @@ import {
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import rehypeRaw from 'rehype-raw'
-import rehypeSanitize from 'rehype-sanitize'
 import './App.css'
 import './wechat-styles.css'
 
@@ -144,12 +142,12 @@ function App() {
       'wx-blockquote': 'margin: 22px 0; padding: 20px 22px 20px 44px; background: linear-gradient(135deg, #f0f9f4 0%, #e8f5ee 100%); border-radius: 12px; font-size: 16px; line-height: 1.8; color: #2c5f3f; box-shadow: 0 2px 8px rgba(7, 193, 96, 0.08), inset 0 0 0 1px rgba(7, 193, 96, 0.1); position: relative;',
       
       // 行内代码
-      'wx-code-inline': 'font-family: "SF Mono", "JetBrains Mono", monospace; font-size: 0.88em; padding: 3px 8px; background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%); border-radius: 5px; color: #e83e8c; font-weight: 500; border: 1px solid rgba(0,0,0,0.06);',
+      'wx-code-inline': 'font-family: "SF Mono", "JetBrains Mono", monospace; font-size: 0.85em; padding: 2px 6px; background: #f1f3f4; border-radius: 4px; color: #d73a49; font-weight: 500;',
       
-      // 代码块 - macOS 风格
-      'wx-pre': 'margin: 20px 0; background: #1e1e2e; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);',
+      // 代码块 - 简洁卡片风格
+      'wx-pre': 'margin: 16px 0; background: #f8f9fa; border-radius: 8px; overflow-x: auto; border: 1px solid #e9ecef; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);',
       
-      'wx-code': 'font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace; font-size: 14px; line-height: 1.7; color: #a6accd; background: transparent; padding: 16px 18px; display: block; white-space: pre; word-wrap: normal; overflow-x: auto; -webkit-overflow-scrolling: touch;',
+      'wx-code': 'font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace; font-size: 14px; line-height: 1.6; color: #24292e; background: transparent; padding: 16px; display: block; white-space: pre; word-wrap: normal; overflow-x: auto;',
       
       // 列表
       'wx-ul': 'margin: 18px 0; padding-left: 20px; list-style-type: none;',
@@ -174,10 +172,15 @@ function App() {
     }
 
     // 转换所有 class 为内联样式
-    Object.entries(styleMap).forEach(([className, style]) => {
-      // 处理 class="wx-xxx"
-      const classRegex = new RegExp(`class="${className}"`, 'g')
-      styledHtml = styledHtml.replace(classRegex, `style="${style}"`)
+    // 按 class name 长度降序排序，确保先处理长的（如 wx-code-inline 在 wx-code 之前）
+    const sortedEntries = Object.entries(styleMap).sort((a, b) => b[0].length - a[0].length)
+    
+    sortedEntries.forEach(([className, style]) => {
+      // 使用正则确保匹配完整的 class name（避免 wx-code 匹配到 wx-code-inline）
+      const regex = new RegExp(`class="${className}"`, 'g')
+      // 将 style 中的双引号替换为单引号，避免与 HTML 属性的双引号冲突
+      const safeStyle = style.replace(/"/g, "'")
+      styledHtml = styledHtml.replace(regex, `style="${safeStyle}"`)
     })
 
     // 为 strong/b 添加样式
@@ -239,13 +242,7 @@ function App() {
       /<td>/g,
       '<td style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; text-align: left;">'
     )
-
-    // 为代码块添加 macOS 标题栏
-    styledHtml = styledHtml.replace(
-      /<pre style="[^"]*">/g,
-      '<pre style="margin: 20px 0; background: #1e1e2e; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);"><div style="height: 36px; background: linear-gradient(180deg, #2d2d3a 0%, #252532 100%); border-bottom: 1px solid #1a1a25; background-image: radial-gradient(circle at 20px 18px, #ff5f56 6px, transparent 6px), radial-gradient(circle at 40px 18px, #ffbd2e 6px, transparent 6px), radial-gradient(circle at 60px 18px, #27c93f 6px, transparent 6px);"></div>'
-    )
-
+    
     // 清理空 style 和 class
     styledHtml = styledHtml.replace(/ style=""/g, '')
     styledHtml = styledHtml.replace(/ class=""/g, '')
@@ -427,7 +424,7 @@ function App() {
                       <div className="article-content" ref={contentRef}>
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                          rehypePlugins={[]}
                           components={{
                             h1: ({children}) => <h1 className="wx-h1">{children}</h1>,
                             h2: ({children}) => <h2 className="wx-h2">{children}</h2>,
@@ -441,26 +438,10 @@ function App() {
                               if (isInline) {
                                 return <code className="wx-code-inline">{children}</code>
                               }
-                              // 代码块：添加行号和日志高亮
-                              const codeString = String(children)
-                              const lines = codeString.split('\n')
-                              const highlightedLines = lines.map((line, index) => {
-                                // 检测日志类型并添加颜色
-                                let lineClass = ''
-                                if (line.includes('成功')) lineClass = 'log-success'
-                                else if (line.includes('收到') || line.includes('接收')) lineClass = 'log-receive'
-                                else if (line.includes('错误') || line.includes('失败') || line.includes('error') || line.includes('fail')) lineClass = 'log-error'
-                                else if (line.includes('警告') || line.includes('warn')) lineClass = 'log-warn'
-                                else if (line.includes('发送') || line.includes('输出') || line.includes('输出')) lineClass = 'log-send'
-                                return (
-                                  <span key={index} className={lineClass}>
-                                    {line || ' '}
-                                  </span>
-                                )
-                              })
+                              // 代码块：保留原始格式，CSS 处理样式
                               return (
                                 <pre className="wx-pre">
-                                  <code className="wx-code">{highlightedLines}</code>
+                                  <code className="wx-code">{children}</code>
                                 </pre>
                               )
                             },
