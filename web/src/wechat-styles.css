@@ -245,8 +245,28 @@
   background: #f8f9fa;
   border-radius: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid #e9ecef;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.wx-pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.wx-pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wx-pre::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.wx-pre::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .wx-pre .wx-code {
@@ -259,7 +279,9 @@
   display: block;
   white-space: pre;
   word-wrap: normal;
-  overflow-x: auto;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  min-width: min-content;
 }
 
 /* 代码块文本样式 */
