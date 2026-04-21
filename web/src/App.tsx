@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import './App.css'
 import './wechat-styles.css'
 
@@ -52,9 +54,16 @@ const DEFAULT_CONTENT = `# 这里是文章标题
 
 代码块：
 
-\`\`\`javascript
-function greet(name) {
-  console.log(\`Hello, \${name}!\`);
+\`\`\`go
+func pyramidTransition(bottom string, allowed []string) bool {
+    rules := make(map[string][]byte)
+    for _, s := range allowed {
+        key := s[:2]
+        rules[key] = append(rules[key], s[2])
+    }
+
+    memo := make(map[string]bool)
+    // ...
 }
 \`\`\`
 
@@ -144,11 +153,31 @@ function App() {
       // 行内代码
       'wx-code-inline': 'font-family: "SF Mono", "JetBrains Mono", monospace; font-size: 0.85em; padding: 2px 6px; background: #f1f3f4; border-radius: 4px; color: #d73a49; font-weight: 500;',
       
-      // 代码块 - 简洁卡片风格
+      // 代码块 - macOS 终端风格
+      'wx-code-window': 'margin: 16px 0; background: #1e1e2e; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.3); border: 1px solid #2a2a3c;',
+
+      'wx-code-header': 'height: 36px; background:rgb(58, 58, 71); display: flex; align-items: center; padding: 0 14px; gap: 8px; border-bottom: 1px solid #2a2a3c; position: relative;',
+
+      'wx-code-dot-red': 'width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: #ff5f56; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.1); color: transparent; font-size: 0; line-height: 0; margin-right: 8px;',
+
+      'wx-code-dot-yellow': 'width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: #ffbd2e; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.1); color: transparent; font-size: 0; line-height: 0; margin-right: 8px;',
+
+      'wx-code-dot-green': 'width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: #27c93f; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.1); color: transparent; font-size: 0; line-height: 0;',
+
+      'wx-code-lang': 'margin-left: auto; float: right; margin-right: 14px; margin-top: 10px; font-size: 11px; color: #6b6b7b; font-family: "SF Mono", "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.5px;',
+
+      'wx-code-body': 'background: #1e1e2e; overflow-x: auto; -webkit-overflow-scrolling: touch;',
+
+      // 导出用纯文本代码块样式（扁平化 SyntaxHighlighter 的复杂 span）
+      'wx-export-pre': 'margin: 0; padding: 16px; background: transparent; font-size: 14px; line-height: 1.6; border-radius: 0 0 10px 10px; white-space: nowrap; word-wrap: normal; word-break: keep-all; overflow-x: auto; -webkit-overflow-scrolling: touch; color: #abb2bf; font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;',
+
+      'wx-export-code': 'font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace; background: transparent; display: block;',
+
+      // 保留旧的代码块样式
       'wx-pre': 'margin: 16px 0; background: #f8f9fa; border-radius: 8px; overflow-x: auto; border: 1px solid #e9ecef; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);',
-      
+
       'wx-code': 'font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace; font-size: 14px; line-height: 1.6; color: #24292e; background: transparent; padding: 16px; display: block; white-space: pre; word-wrap: normal; overflow-x: auto;',
-      
+
       // 列表
       'wx-ul': 'margin: 18px 0; padding-left: 20px; list-style-type: none;',
       
@@ -170,6 +199,50 @@ function App() {
       // 图片
       'wx-img': 'max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.12);',
     }
+
+    // 在 class 转换之前：简化 SyntaxHighlighter 生成的复杂 span 结构
+    // 保留颜色信息，去掉不必要的嵌套，提高微信公众号编辑器兼容性
+    styledHtml = styledHtml.replace(
+      /<div[^>]*\bclass="wx-code-body"[^>]*>([\s\S]*?)<\/div>/g,
+      (_, inner) => {
+        // 1. 去掉外层 pre/code 标签（后面会重新包装）
+        let processed = inner
+          .replace(/<pre[^>]*>/g, '')
+          .replace(/<\/pre>/g, '')
+          .replace(/<code[^>]*>/g, '')
+          .replace(/<\/code>/g, '')
+
+        // 2. 保留带 style 的 span，只提取 color 属性（防止 style 中的双引号冲突）
+        // 没有 style 的 span 也要保留（可能是空格 token）
+        processed = processed.replace(
+          /<span\b[^>]*>/g,
+          (match: string) => {
+            const styleMatch = match.match(/style="([^"]*)"/)
+            if (styleMatch) {
+              const colorMatch = styleMatch[1].match(/color:\s*([^;]+)/i)
+              if (colorMatch) {
+                const safeColor = colorMatch[1].trim().replace(/"/g, "'")
+                return `<span style='color:${safeColor}'>`
+              }
+            }
+            // 保留原始 span（空格 token 等无 style 的 span）
+            return match
+          }
+        )
+
+        // 3. 去掉所有其他标签（保留 span、/span）
+        processed = processed.replace(/<(?!span\b|\/span>)[^>]*>/g, '')
+
+        // 4. 处理空白：把换行符转为 <br>，空格转为 &nbsp;
+        // 注意：不要去掉标签之间的换行，因为 SyntaxHighlighter 的 innerHTML 中
+        // 标签之间的 \n 是代码的实际换行，不是浏览器插入的格式化空白
+        processed = processed.replace(/\n/g, '<br>')
+        // 把所有普通空格转为 &nbsp;，防止微信编辑器合并空格
+        processed = processed.replace(/ /g, '&nbsp;')
+
+        return `<div class="wx-code-body"><pre class="wx-export-pre"><code class="wx-export-code">${processed}</code></pre></div>`
+      }
+    )
 
     // 转换所有 class 为内联样式
     // 按 class name 长度降序排序，确保先处理长的（如 wx-code-inline 在 wx-code 之前）
@@ -267,7 +340,7 @@ function App() {
     try {
       // 创建富文本格式的 ClipboardItem
       const htmlBlob = new Blob([html], { type: 'text/html' })
-      const textBlob = new Blob([html.replace(/<[^>]*>/g, '')], { type: 'text/plain' })
+      const textBlob = new Blob([html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '')], { type: 'text/plain' })
       
       const clipboardItem = new ClipboardItem({
         'text/html': htmlBlob,
@@ -438,11 +511,42 @@ function App() {
                               if (isInline) {
                                 return <code className="wx-code-inline">{children}</code>
                               }
-                              // 代码块：保留原始格式，CSS 处理样式
+                              const language = className.replace('language-', '') || 'text'
                               return (
-                                <pre className="wx-pre">
-                                  <code className="wx-code">{children}</code>
-                                </pre>
+                                <div className="wx-code-window">
+                                  <div className="wx-code-header">
+                                    <span className="wx-code-dot-red">&nbsp;</span>
+                                    <span className="wx-code-dot-yellow">&nbsp;</span>
+                                    <span className="wx-code-dot-green">&nbsp;</span>
+                                    <span className="wx-code-lang">{language}</span>
+                                  </div>
+                                  <div className="wx-code-body">
+                                    <SyntaxHighlighter
+                                      language={language}
+                                      style={vscDarkPlus}
+                                      useInlineStyles={true}
+                                      customStyle={{
+                                        margin: 0,
+                                        padding: '16px',
+                                        background: 'transparent',
+                                        fontSize: '14px',
+                                        lineHeight: '1.6',
+                                        borderRadius: '0 0 10px 10px',
+                                        whiteSpace: 'pre',
+                                        overflow: 'auto',
+                                        WebkitOverflowScrolling: 'touch',
+                                      }}
+                                      codeTagProps={{
+                                        style: {
+                                          background: 'transparent',
+                                          fontFamily: '"SF Mono", "JetBrains Mono", "Fira Code", monospace',
+                                        }
+                                      }}
+                                    >
+                                      {String(children).replace(/\n$/, '')}
+                                    </SyntaxHighlighter>
+                                  </div>
+                                </div>
                               )
                             },
                             ul: ({children}) => <ul className="wx-ul">{children}</ul>,
